@@ -21,13 +21,26 @@ class DataBase(val database: Map[String, (List[Column], Set[List[PrimitiveValue]
     index.map{ c: Column => source.indexWhere(_ == c)}
   }
 
-  def lookup(info: TableInfo) : Option[SetValue[TupleValue]] = {
+  def lookup(info: TableInfo) : Option[Set[TupleValue]] = {
     database.get(info.table).map{case (columns, setv) => {
         val index = get_index(columns, info.columns)
         //projection
-        setv.map{l: List[PrimitiveValue] => TupleValue(l.map(index))}
+        //what to do with empty table, table which has no values
+        //for now just take its as empty set, but sigleton set of empty TupleValue is better?
+        setv.map{l: List[PrimitiveValue] => TupleValue(index.map(l))}
       }
     }
+  }
+
+  def name_pred : Set[NamePredicate] = {
+    def value2namePred(v: PrimitiveValue) : Option[NamePredicate] = {
+      v match{
+        case SymbolicValue(name, t) => Some(NamePredicate(name, t))
+        case _ => None
+      }
+    }
+
+    database.values.foldLeft(Set[NamePredicate]()){case (l, (_, setv)) => l | setv.flatMap{l: List[PremitiveValue] => l.flatMap(value2namePred)}}
   }
 
 }
@@ -42,16 +55,18 @@ object DataBase{
 }
 
 
-class DataLoader(path: String){
+class DataLoader(base_path: String){
 
-  val source = Source.fromFile(path)
+  // no error handling
+  private val path = base_path + ".data"
+  private val source = Source.fromFile(path)
 
   val loaded_database = {
     val lines = source.getLines
-    parse(lines, "", List(), Map(), Map())
+    parse(lines, "", List[Tag](), List[Columns](), Map[String, (List[Column], Set[List[PrimitiveValue]])]())
   }
 
-  private val table_exp : Regex = "(\w+):\n".r
+  private val table_exp : Regex = "(.+):\n".r
   private val num_exp : Regex = "(-?\d+(\.\d*)?)".r
 
   private def isNum(s: String) = {
@@ -61,7 +76,7 @@ class DataLoader(path: String){
     }
   }
 
-  private def parse(lines: List[String], table: String, tags: List[Tag], columns: List[Column], acc_map: Map[String, Set[List[PrimitiveValue]]]) : Map[String, Set[List[PrimitiveValue]]] = {
+  private def parse(lines: List[String], table: String, tags: List[Tag], columns: List[Column], acc_map: Map[String, (List[Column], Set[List[PrimitiveValue]])]) : Map[String, (List[Column], Set[List[PrimitiveValue]])] = {
     //caseが3重になってるのいやだな。。。
    lines match{
      case y::yl =>{
@@ -74,7 +89,7 @@ class DataLoader(path: String){
                val tags_new = t.stripLineEnd.split("\t").toList
                val columns_new = c.stripLineEnd.split("\t").toList
                //there might be a table with no specific values
-               val map_new = acc_map + (p->(columns_new, Set()))
+               val map_new = acc_map + (p->(columns_new, Set[List[PrimitiveValue]]()))
                parse(ys, pre_new, tags_new, columns_new, map_new)
              }
              case _ => {println("invalid table detected at the bottom"); acc_map} //ignore invalid table and finish
@@ -83,7 +98,7 @@ class DataLoader(path: String){
         case _ =>{
           //assuming length of tags, columns and corresponding data are the same
           val v_new = y.stripLineEnd.split("\t").zip(tags).map {case (s, t) => if (isNum(s)) new NumericValue(s.toDouble, t) else SymbolicValue(s, t)}
-          val set_new = acc_map.getOrElse(table, (List(), Set()))._2 + v_new
+          val set_new = acc_map.getOrElse(table, (List[Clumns](), Set[List[PrimitiveValue]]()))._2 + v_new
           val map_new = acc_map + (table->(columns, set_new))
           parse(yl, table, tags, columns, map_new)
         }

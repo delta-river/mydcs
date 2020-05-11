@@ -14,11 +14,12 @@ class Denotation(val a: Set[List[TupleValue]], val sigma: List[Store]){
   //remove non initial columns with empty stores
   def remove = {
     val keep_index = this.sigma.zipWithIndex.flatMap{case (s, i) => if (s.isEmpty && i > 0) None else Some(i)}
-    val a_new = a.map(keep_index)
-    val sigma_new = sigma.(keep_index)
+    val a_new = keep_index.map(a)
+    val sigma_new = keep_index.map(sigma)
     new Denotation(a_new, sigma_new)
   }
 
+  //might not needed
   private def simple_join(that: Denotation) : Denotation = {
     val a_new = this.a ++ that.a
     val sigma_new = this.sigma ++ that.sigma
@@ -28,10 +29,13 @@ class Denotation(val a: Set[List[TupleValue]], val sigma: List[Store]){
 
   def join_proj(i: Int, j: Int, that: Denotation) : Denotation = {
     //doesnt check if i, j is valid index
+    //どっちもemptyの場合は結局結果はemptyなので、これでOkだと思われ。
     val a_new = this.a.flatMap{this_l: List[TupleValue] => that.a.flatMap{that_l: List[TupleValue] => if (this_l(i) == that_l(j)) Some(this_l ++ that_l) else None}}
     val sigma_new = this.sigma ++ that.sigma
+
     (new Denotation(a_new, sigma_n)).remove
   }
+
 }
 
 object Denotation{
@@ -39,7 +43,7 @@ object Denotation{
   //calculate denotation of tree
   def from_tree(t: Tree, world: World) : Denotation = {
     //base case
-    def leaf(pred: Predicate) : Denotation = new Denotation(world.values(pred).v, Store.empty)
+    def leaf(pred: Predicate) : Denotation = new Denotation(world.values(pred), Store.empty)
 
     //step case
     def step(children: List[(Relation, Tree)], acc: Denotation) : Denotation = {

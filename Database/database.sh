@@ -10,6 +10,8 @@ SOURCE[3]=${DATABASE}.json
 MAIN_SOURCE=${SOURCE[0]}
 #tag file
 TAG=../${DATABASE}.tag
+#output file
+OUTPUT=../${DATABASE}.data
 
 function expect_pass(){
 	expect -c "
@@ -47,10 +49,10 @@ function tag_insert(){
 }
 
 #reset database
-if [ -e database.txt ]; then
-	rm database.txt
+if [ -e ${OUTPUT} ]; then
+	rm ${OUTPUT}
 fi
-touch database.txt
+touch ${OUTPUT}
 
 #create a directory for the specific database
 mkdir -p ${DATABASE}
@@ -99,11 +101,11 @@ do
 	expect_pass "mysql -N -u root -p ${DATABASE} < tmp.sql > tmp" ${PASSWORD}
 	count=`cat tmp`
 
-	echo "${tables[$i]}:" >> ../database.txt
-	tag_insert "../database.txt" ${tables[$i]} ${count}
+	echo "${tables[$i]}:" >> ${OUTPUT}
+	tag_insert ${OUTPUT} ${tables[$i]} ${count}
 
 	echo "select * from ${tables[$i]};" > tmp.sql
-	expect_pass "mysql -u root -p ${DATABASE} < tmp.sql >> ../database.txt" ${PASSWORD}
+	expect_pass "mysql -u root -p ${DATABASE} < tmp.sql >> ${OUTPUT}" ${PASSWORD}
 done
 
 #remove database
