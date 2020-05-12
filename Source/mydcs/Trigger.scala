@@ -22,13 +22,13 @@ class LexicalTrigger(base_path: String){
 
   def lookup(s: String) : Option[String] = lextrigger.get(s)
 
-  private val trigger_exp = "(.+):((.+\t)+)\n".r
+  private val trigger_exp = """(.+):(.+)\n""".r
 
   private def load(lines: List[String], acc_map: Map[String, String]) : Map[String, String] = {
     lines match{
       case y::yl => {
         y match{
-          case custom_exp(pred_name, words, _) =>{
+          case custom_exp(pred_name, words) =>{
             val word_list = words.split("\t")
             // overwrite if there are words that corresponds to some different predicate name
             val map_new = word_list.foldLeft(acc_map){ case (l, w) => l + (w->pred_name)}

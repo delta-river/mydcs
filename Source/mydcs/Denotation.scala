@@ -36,12 +36,20 @@ class Denotation(val a: Set[List[TupleValue]], val sigma: List[Store]){
     (new Denotation(a_new, sigma_n)).remove
   }
 
+  def answer : String = {
+    a.toSeq match{
+      case Seq() => "No"
+      case Set(Nil) => "Yes"
+      case l => l.map(_.output).mkString("{", ", ", "}")
+    }
+  }
+
 }
 
 object Denotation{
 
   //calculate denotation of tree
-  def from_tree(t: Tree, world: World) : Denotation = {
+  def calculate(t: DCSTree, world: World) : Denotation = {
     //base case
     def leaf(pred: Predicate) : Denotation = new Denotation(world.values(pred), Store.empty)
 
@@ -52,7 +60,7 @@ object Denotation{
           e match {
             //for now only join relation
             case Join(i, j) => {
-              val child_denote = from_tree(c, world)
+              val child_denote = calculate(c, world)
               val denote_new = acc.join_proj(i, j, child_denote)
               step(rem_chil, denote_new)
             }

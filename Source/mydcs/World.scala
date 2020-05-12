@@ -17,6 +17,3 @@ class World(_database: DataBase) {
   }
 
 }
-
-object World{
-}

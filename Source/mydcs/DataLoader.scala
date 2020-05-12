@@ -15,7 +15,8 @@ import scala.util.matching.Regex
 
 class TableInfo(val table: String, val columns: List[Column])
 
-class DataBase(val database: Map[String, (List[Column], Set[List[PrimitiveValue]])]){
+//type Data = (List[Column], Set[List[PrimitiveValue]])
+class DataBase(val database: Map[String, Data]){
 
   private def get_index(source: List[Column], index: List[Column]) : List[Int] = {
     index.map{ c: Column => source.indexWhere(_ == c)}
@@ -43,11 +44,28 @@ class DataBase(val database: Map[String, (List[Column], Set[List[PrimitiveValue]
     database.values.foldLeft(Set[NamePredicate]()){case (l, (_, setv)) => l | setv.flatMap{l: List[PremitiveValue] => l.flatMap(value2namePred)}}
   }
 
+  def get_abst(info: TableInfo) : Option[AbstractValue] = {
+    database.get(info.table).map{case (columns, setv) => {
+      val index = get_index(columns, info.columns)
+      // take a list of vlaues from set
+      val alist = setv.find(_ => true)
+      val abst_list : List[AbstractValue] = index.map(alist).map{case SymbolicValue(_, t) => AbstractSymb(t) case NumericValue(_, t) => AbstractNum(t)}
+      AbstractTup(abst_list)
+      }
+    }
+  }
+
 }
 
 object DataBase{
 
   def fromLoader(dl: DataLoader) : DataBase = {
+    val database = dl.loaded_database
+    new DataBase(database)
+  }
+
+  def fromPath(path: String) : DataBase = {
+    val dl = new DataLoader(path)
     val database = dl.loaded_database
     new DataBase(database)
   }
@@ -63,24 +81,26 @@ class DataLoader(base_path: String){
 
   val loaded_database = {
     val lines = source.getLines
-    parse(lines, "", List[Tag](), List[Columns](), Map[String, (List[Column], Set[List[PrimitiveValue]])]())
+    parse(lines, "", List[Tag](), List[Columns](), Map[String, Data]())
   }
 
-  private val table_exp : Regex = "(.+):\n".r
-  private val num_exp : Regex = "(-?\d+(\.\d*)?)".r
+  private val table_exp : Regex = """(.+):\n""".r
+  private val num_exp : Regex = """(-?\d+(?:\.\d*)?)""".r
 
   private def isNum(s: String) = {
     s match{
-      case num_exp(d, _) => true
+      case num_exp(d) => true
       case _ => false
     }
   }
 
-  private def parse(lines: List[String], table: String, tags: List[Tag], columns: List[Column], acc_map: Map[String, (List[Column], Set[List[PrimitiveValue]])]) : Map[String, (List[Column], Set[List[PrimitiveValue]])] = {
+  //type Data = (List[Column], Set[List[PrimitiveValue]])
+  private def parse(lines: List[String], table: String, tags: List[Tag], columns: List[Column], acc_map: Map[String, Data]) : Map[String, Data] = {
     //caseが3重になってるのいやだな。。。
    lines match{
      case y::yl =>{
        y match{
+         //new table start
          case table_exp(p) =>{
            yl match {
              case t::c::ys => {
@@ -90,11 +110,12 @@ class DataLoader(base_path: String){
                val columns_new = c.stripLineEnd.split("\t").toList
                //there might be a table with no specific values
                val map_new = acc_map + (p->(columns_new, Set[List[PrimitiveValue]]()))
-               parse(ys, pre_new, tags_new, columns_new, map_new)
+               parse(ys, table_new, tags_new, columns_new, map_new)
              }
              case _ => {println("invalid table detected at the bottom"); acc_map} //ignore invalid table and finish
            }
          }
+         //table values
         case _ =>{
           //assuming length of tags, columns and corresponding data are the same
           val v_new = y.stripLineEnd.split("\t").zip(tags).map {case (s, t) => if (isNum(s)) new NumericValue(s.toDouble, t) else SymbolicValue(s, t)}
