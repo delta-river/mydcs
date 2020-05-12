@@ -17,7 +17,7 @@ class LexicalTrigger(base_path: String){
   //map from words to predicate name
   private val lextrigger : Map[String, String] = {
     val lines = source.getLines
-    load(lines, Map[String, String])
+    load(lines.toList, Map[String, String]())
   }
 
   def lookup(s: String) : Option[String] = lextrigger.get(s)
@@ -28,7 +28,7 @@ class LexicalTrigger(base_path: String){
     lines match{
       case y::yl => {
         y match{
-          case custom_exp(pred_name, words) =>{
+          case trigger_exp(pred_name, words) =>{
             val word_list = words.split("\t")
             // overwrite if there are words that corresponds to some different predicate name
             val map_new = word_list.foldLeft(acc_map){ case (l, w) => l + (w->pred_name)}

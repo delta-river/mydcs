@@ -36,8 +36,8 @@ object InputTree{
     //this matching might be skipped assuming fine input tree 
     line match{
       case tree_exp(root_text, root_lemma, children) =>{
-        val str_chldren : List[String] = split_brackets(children).map(_.trim)
-        new InputTree((root_text, root_lemma), str_children.flatMap(parse))
+        val str_children : List[String] = split_brackets(children).map(_.trim)
+        Some(new InputTree((root_text, root_lemma), str_children.flatMap(parse)))
       }
       case _ => println("!!!!!!!!!!!!!!!!!!tree miss match!!!!!!!!!!!!!!!!!!!");println(line);None
     }
@@ -46,17 +46,12 @@ object InputTree{
   def load(base_path: String) : List[InputTree] = {
     val path : String = base_path + ".tree"
     val source = Source.fromFile(path)
-    val lines = source.getLines.map(stripLineEnd)
-    lines.flatMap(parse)
+    val lines = source.getLines.map(_.stripLineEnd)
+    lines.toList.flatMap(parse)
   }
 
 }
 
 class MediateTree(val root: Predicate, val children: List[MediateTree])
 
-class DCSTree(val root: Predicate, val children : List[(Relation, DCSTree)]){
-  def denote : Denotation
-}
-
-object DCSTree{
-}
+class DCSTree(val root: Predicate, val children : List[(Relation, DCSTree)])

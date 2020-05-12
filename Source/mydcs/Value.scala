@@ -1,11 +1,13 @@
 package mydcs
 
+import Types._
+
 trait Value{
   def output : String
 }
 
 trait PrimitiveValue extends Value
-case class NumricValue(v:Double, t:Tag) extends PrimitiveValue {
+case class NumericValue(v:Double, t:Tag) extends PrimitiveValue {
   def output : String = v.toString
 }
 case class SymbolicValue(v:String, t:Tag) extends PrimitiveValue{
@@ -13,8 +15,10 @@ case class SymbolicValue(v:String, t:Tag) extends PrimitiveValue{
 }
 
 //only to allow values of the same type to be included
-case class SetValue[+T <: Value](v:Set[T]) extends Value {
-  def push(s:T) : SetValue = new SetValue(this.v + s)
+//case class SetValue[+T <: Value](v:Set[T]) extends Value {
+//assume it is satisfied
+case class SetValue(v:Set[Value]) extends Value {
+  def push(s:Value) : SetValue = new SetValue(this.v + s)
 
   def output : String = v.toList.map(_.output).mkString("{", ", ", "}")
   /*
@@ -26,11 +30,13 @@ case class SetValue[+T <: Value](v:Set[T]) extends Value {
   */
 }
 
-abstract class NonTupleValue extends PrimitiveValue with SetValue
+//not to use this for simplification
+//abstract class NonTupleValue extends PrimitiveValue with SetValue
 
 //only to allow nontuple value to be its component
-case class TupleValue(v:List[NonTupleValue]) extends Value{
-  def project(index: List[Int]) : TupleValue = new TupleValue(this.v.map(index))
+//case class TupleValue(v:List[NonTupleValue]) extends Value{
+case class TupleValue(v:List[Value]) extends Value{
+  def project(index: List[Int]) : TupleValue = new TupleValue(index.map(this.v))
 
   def output : String = if (v.length == 1) v.head.output else {
     v.map(_.output).mkString("(", ", ", ")")
@@ -39,8 +45,8 @@ case class TupleValue(v:List[NonTupleValue]) extends Value{
 }
 
 object SetValue{
-  def empty[T]() : SetValue[T] = {
-    val emp : Set[T] = Set()
+  def empty() : SetValue = {
+    val emp : Set[Value] = Set()
     new SetValue(emp)
   }
 }

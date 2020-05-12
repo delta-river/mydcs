@@ -14,17 +14,9 @@ class Denotation(val a: Set[List[TupleValue]], val sigma: List[Store]){
   //remove non initial columns with empty stores
   def remove = {
     val keep_index = this.sigma.zipWithIndex.flatMap{case (s, i) => if (s.isEmpty && i > 0) None else Some(i)}
-    val a_new = keep_index.map(a)
+    val a_new = a.map{l : List[TupleValue] => keep_index.map(l)}
     val sigma_new = keep_index.map(sigma)
     new Denotation(a_new, sigma_new)
-  }
-
-  //might not needed
-  private def simple_join(that: Denotation) : Denotation = {
-    val a_new = this.a ++ that.a
-    val sigma_new = this.sigma ++ that.sigma
-    val arity_new = this.arity + that.arity
-    new Denotation(arity_new, a_new, sigma_new)
   }
 
   def join_proj(i: Int, j: Int, that: Denotation) : Denotation = {
@@ -33,14 +25,14 @@ class Denotation(val a: Set[List[TupleValue]], val sigma: List[Store]){
     val a_new = this.a.flatMap{this_l: List[TupleValue] => that.a.flatMap{that_l: List[TupleValue] => if (this_l(i) == that_l(j)) Some(this_l ++ that_l) else None}}
     val sigma_new = this.sigma ++ that.sigma
 
-    (new Denotation(a_new, sigma_n)).remove
+    (new Denotation(a_new, sigma_new)).remove
   }
 
   def answer : String = {
     a.toSeq match{
       case Seq() => "No"
-      case Set(Nil) => "Yes"
-      case l => l.map(_.output).mkString("{", ", ", "}")
+      case Seq(Nil) => "Yes"
+      case l => l.map{v: List[TupleValue] => v.map(_.output)}.mkString("{", ", ", "}")
     }
   }
 
@@ -51,10 +43,11 @@ object Denotation{
   //calculate denotation of tree
   def calculate(t: DCSTree, world: World) : Denotation = {
     //base case
-    def leaf(pred: Predicate) : Denotation = new Denotation(world.values(pred), Store.empty)
+    //for a leaf, only one column
+    def leaf(pred: Predicate) : Denotation = new Denotation(world.values(pred), List(Store.empty))
 
     //step case
-    def step(children: List[(Relation, Tree)], acc: Denotation) : Denotation = {
+    def step(children: List[(Relation, DCSTree)], acc: Denotation) : Denotation = {
       children match {
         case (e, c)::rem_chil =>{
           e match {

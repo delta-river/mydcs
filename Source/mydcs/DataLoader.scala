@@ -41,14 +41,15 @@ class DataBase(val database: Map[String, Data]){
       }
     }
 
-    database.values.foldLeft(Set[NamePredicate]()){case (l, (_, setv)) => l | setv.flatMap{l: List[PremitiveValue] => l.flatMap(value2namePred)}}
+    database.values.foldLeft(Set[NamePredicate]()){case (l, (_, setv)) => l | setv.flatMap{l: List[PrimitiveValue] => l.flatMap(value2namePred)}}
   }
 
-  def get_abst(info: TableInfo) : Option[AbstractValue] = {
+  def get_abst(info: TableInfo) : Option[AbstractTup] = {
     database.get(info.table).map{case (columns, setv) => {
       val index = get_index(columns, info.columns)
       // take a list of vlaues from set
-      val alist = setv.find(_ => true)
+      // empty table not allowed
+      val alist = setv.head
       val abst_list : List[AbstractValue] = index.map(alist).map{case SymbolicValue(_, t) => AbstractSymb(t) case NumericValue(_, t) => AbstractNum(t)}
       AbstractTup(abst_list)
       }
@@ -81,7 +82,7 @@ class DataLoader(base_path: String){
 
   val loaded_database = {
     val lines = source.getLines
-    parse(lines, "", List[Tag](), List[Columns](), Map[String, Data]())
+    parse(lines.toList, "", List[Tag](), List[Column](), Map[String, Data]())
   }
 
   private val table_exp : Regex = """(.+):\n""".r
@@ -108,9 +109,13 @@ class DataLoader(base_path: String){
                //assuming length of tags and corresponnding columns are the same
                val tags_new = t.stripLineEnd.split("\t").toList
                val columns_new = c.stripLineEnd.split("\t").toList
+               /*
                //there might be a table with no specific values
                val map_new = acc_map + (p->(columns_new, Set[List[PrimitiveValue]]()))
                parse(ys, table_new, tags_new, columns_new, map_new)
+               */
+              //empty table not allowed
+               parse(ys, table_new, tags_new, columns_new, acc_map)
              }
              case _ => {println("invalid table detected at the bottom"); acc_map} //ignore invalid table and finish
            }
@@ -118,8 +123,8 @@ class DataLoader(base_path: String){
          //table values
         case _ =>{
           //assuming length of tags, columns and corresponding data are the same
-          val v_new = y.stripLineEnd.split("\t").zip(tags).map {case (s, t) => if (isNum(s)) new NumericValue(s.toDouble, t) else SymbolicValue(s, t)}
-          val set_new = acc_map.getOrElse(table, (List[Clumns](), Set[List[PrimitiveValue]]()))._2 + v_new
+          val v_new = y.stripLineEnd.split("\t").zip(tags).map {case (s, t) => if (isNum(s)) new NumericValue(s.toDouble, t) else SymbolicValue(s, t)}.toList
+          val set_new = acc_map.getOrElse(table, (columns, Set[List[PrimitiveValue]]()))._2 + v_new
           val map_new = acc_map + (table->(columns, set_new))
           parse(yl, table, tags, columns, map_new)
         }

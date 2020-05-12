@@ -8,19 +8,21 @@ import Types._
 trait Predicate{
   val name : String
   //use this information when inserting relation
-  val abst : AbstractTup
+  val abst : List[AbstractTup]
 
-  def joinable(that: Predicate) : List[(Int, Int)] = abst.matching(that.abst)
+  def joinable(that: Predicate) : List[(Int, Int)] = {
+    abst.flatMap{this_abst: AbstractTup => that.abst.flatMap{that_abst: AbstractTup => this_abst.matching(that_abst)}}
+  }
 }
 
 case class NamePredicate(val name: String, val t: Tag) extends Predicate {
-  val abst = AbstractTup(AbstractSymb(t))
+  val abst = List(AbstractTup(List(AbstractSymb(t))))
 }
-case class CustomPredicate(val name: String, val info: List[TableInfo], val abst: AbstractTup) extends Predicate{
-  def add_info(info_new: TableInfo) : CustomPredicate = new CustomPredicate(name, info + info_new, abst)
-  def add_abst(abst_new: Option[AbstractValue]) : CustomPredicate = {
+case class CustomPredicate(val name: String, val info: List[TableInfo], val abst: List[AbstractTup]) extends Predicate{
+  def add_info(info_new: TableInfo) : CustomPredicate = new CustomPredicate(name, info :+ info_new, abst)
+  def add_abst(abst_new: Option[AbstractTup]) : CustomPredicate = {
     abst_new match{
-      case Some(abs) => new CustomPredicate(name, info, abst + abs)
+      case Some(abs) => new CustomPredicate(name, info, abst :+ abs)
       case _ => this
     }
   }
@@ -35,7 +37,7 @@ object Predicate{
 */
 
 object CustomPredicate{
-  def named_empty(name: String) : CustomPredicate = new CustomPredicate(name, List[TableInfo](), List[AbstractValue]())
+  def named_empty(name: String) : CustomPredicate = new CustomPredicate(name, List[TableInfo](), List[AbstractTup]())
 }
 
 //load custom predicate from predicate tag file
@@ -44,7 +46,7 @@ object CustomPredicate{
 //...
 //if same name is unsed for predicate in different lines, information will be added
 
-class PredicateTable(base_path: String, database: Database){
+class PredicateTable(base_path: String, database: DataBase){
   
   // no error handling
   private val path = base_path + ".pred"
@@ -52,7 +54,7 @@ class PredicateTable(base_path: String, database: Database){
 
   private val custom_predMap : Map[String, Predicate] = {
     val lines = source.getLines
-    load(lines, Map[String, Predicate]())
+    load(lines.toList, Map[String, CustomPredicate]())
   }
 
   private val name_predMap : Map[String, Predicate] = {
@@ -65,26 +67,27 @@ class PredicateTable(base_path: String, database: Database){
 
   //enumerate predicates that can be used as trace predicate (only considering CustomPred)
   def related_pred(p1: Predicate, p2: Predicate) : List[Predicate] = {
-    custom_predMap.values.filter{ trace: Predicate =>
+    custom_predMap.values.toList.filter{ trace: Predicate =>
       val p1_joinable = p1.joinable(trace)
       val p2_joinable = trace.joinable(p2)
       //check if there is joinables pairs that does not share the same column of trace
-      p1_joinable.exists{ case (i1, j1) => p2_jonable.exists{case (i2, j2) => j1 != i2}}
+      p1_joinable.exists{ case (i1, j1) => p2_joinable.exists{case (i2, j2) => j1 != i2}}
     }
   }
 
   private val custom_exp = """([^:]+):([^:]+):(.+)\n""".r
 
-  private def load(lines: List[String], acc_map: Map[String, Predicate]) : Map[String, Predicate] = {
+  private def load(lines: List[String], acc_map: Map[String, CustomPredicate]) : Map[String, CustomPredicate] = {
     lines match{
       case y::yl => {
         y match{
           case custom_exp(name, table, columns, _) =>{
-            val column_list = columns.split("\t")
+            val column_list = columns.split("\t").toList
             val info_new = new TableInfo(table, column_list)
-            val abst_new : Option[AbstractValue]= database.get_abst(info_new)
+            val abst_new : Option[AbstractTup]= database.get_abst(info_new)
             val pred_new = acc_map.getOrElse(name, CustomPredicate.named_empty(name)).add_info(info_new).add_abst(abst_new)
             val map_new = acc_map + (name->pred_new)
+            load(yl, map_new)
           }
           //ignore line of just "\n"
           case "\n" => load(yl, acc_map)
