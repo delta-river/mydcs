@@ -1,13 +1,12 @@
-TARGET = database
 PAS = invalid
 DATABASE = geography
 
-all: $(TARGET)
+all: database
 
 database: database.sh
 	chmod +x database.sh; ./database.sh $(PAS) $(DATABASE)
 
 clean:
-	rm -r $(DATABASE) database.txt
+	rm -r $(DATABASE)
 
 .PHONY: clean

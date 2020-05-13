@@ -1,26 +1,21 @@
-CC = g++
-CFLAGS = -Wall -std=c++14
-TARGET = mydcs
-SRCS = $(wildcard *.scala)
-OBJS = $(SRCS:%.cpp=%.o)
-DEPS = $(SRCS:%.cpp=%.d)
+DATABASE = geography
 
-all: $(TARGET)
+#IN input query file
+#DATA database base_path
+DATA = Database/$(DATABASE)
+#OUT output base_path
+OUT = ./Output/output
 
--include $(DEPS)
+all: main
 
-$(TARGET): $(OBJS)
-	$(CC) -g -o $@ $^
-
-%.o: %.cpp
-	$(CC) $(CFLAGS) -c $< 
+main:
+	cd Source; make IN=$(IN) DATA=$(DATA) OUT=$(OUT)
 
 #password for mysql
 database:
-	@echo "mysql password:"; stty -echo; read PAS;stty echo;cd Database; make PAS="$$PAS"
+	@echo "mysql password:"; stty -echo; read PAS;stty echo;cd Database; make DATABASE=$(DATABASE) PAS="$$PAS"
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(DEPS);\
-		cd Database; make clean
+	cd Database; make clean; cd Source; make clean
 
 .PHONY: clean database

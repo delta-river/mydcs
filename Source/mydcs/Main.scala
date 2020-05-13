@@ -8,7 +8,7 @@ object Main{
   //output_base_path is used for inputting trees, output results
 
   def main(args: Array[String]) : Unit = {
-    if (args.length < 2) println("!!!!!!!!!!!!!!!!!!!!!!too few arguments!!!!!!!!!!!!!!!!!!!!") else {
+    if (args.length < 2) println("!!!!!!!!!!!!!!!!!!!!!!too few arguments:mydcs.Main!!!!!!!!!!!!!!!!!!!!") else {
       val input_base : String = args(0)
       val output_base : String = args(1)
 
