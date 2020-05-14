@@ -55,7 +55,13 @@ object InputTree{
 
 }
 
-class MediateTree(val root: Predicate, val children: List[MediateTree])
+class MediateTree(val root: Predicate, val children: List[MediateTree]){
+  def output : String = {
+    val this_pred = "\"" + root.name + "\";"
+    val child_str = children.map{case t => "{" + t.output + "}"}
+    (this_pred +: child_str).mkString("(", "\t", ")")
+  }
+}
 
 class DCSTree(val root: Predicate, val children : List[(Relation, DCSTree)]){
   //DCS Tree output style is as below

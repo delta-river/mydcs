@@ -13,10 +13,14 @@ trait Predicate{
   def joinable(that: Predicate) : List[(Int, (Int, Int))] = {
     abst.zipWithIndex.flatMap{case (this_abst, i) => that.abst.flatMap{that_abst: AbstractTup => this_abst.matching(that_abst).map{p: (Int, Int) => (i, p)}}}
   }
+
+  def proj_away(i: List[Int]) : Predicate
 }
 
 case class NamePredicate(val name: String, val t: Tag) extends Predicate {
   val abst = List(AbstractTup(List(AbstractSymb(t))))
+  //just return itself
+  def proj_away(i: List[Int]) = this
 }
 
 //assume ith component of info corresponds ith component of abst
@@ -29,17 +33,7 @@ case class CustomPredicate(val name: String, val info: List[TableInfo], val abst
     }
   }
 
-  def joinOrDelte(that: Predicate) : (CustomPredicate, List[(Int, Int)]) = {
-    val joinabler = this.joinable(that)
-    //indices of abst that matched
-    val surviver: List[Int] = joinabler.map(_._1)
-    val indice_p: List[(Int, Int)] = joinabler.map(_._2)
-    val info_new = surviver.map(info)
-    val abst_new = surviver.map(abst)
-    (new CustomPredicate(name, info_new, abst_new), indice_p)
-  }
-
-  def proj_away(i: Int) : CustomPredicate = new CustomPredicate(name, List(info(i)), List(abst(i)))
+  def proj_away(i: List[Int]) = new CustomPredicate(name, i.map(info), i.map(abst))
 }
 
 /* companion object cannot be set for trait

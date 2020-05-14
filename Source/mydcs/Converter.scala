@@ -21,8 +21,40 @@ class Converter(_predtable: PredicateTable, _lextrigger: LexicalTrigger){
       }
       //has no corresponding predicate
       case _ => {
+        //println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!word dropped")
+        //println(root_lemma)
         //just returns its children as list
         input.children.flatMap(input2mediate)
+      }
+    }
+  }
+
+  //used only when children do not contain None
+  private def feasible_table(root_pred: Predicate, children: List[Option[DCSTree]]) : List[Int] = {
+    val joinables: List[List[Int]] = children.flatMap{child_op: Option[DCSTree] => child_op.map{child: DCSTree => root_pred.joinable(child.root).map(_._1).distinct}}
+    //find common joiable table index
+    joinables match{
+      case Nil => Nil
+      case y::yl => yl.foldLeft(y){(l, r) => l.intersect(r)}
+    }
+  }
+
+  private def insert_join(root_pred: Predicate, child: DCSTree) : Option[(Relation, DCSTree)] = {
+    val joinable : List[(Int, Int)] = root_pred.joinable(child.root).map(_._2)
+    joinable match{
+      case Nil => None
+      case _ => {
+        //huristics
+        //assuming that root will take the domain part of values
+        val chosen : Join = joinable.find{case (i, j) => i < j} match {
+          case Some(ret) => Join(ret._1, ret._2)
+          case None => {
+            //just take the head
+            val one = joinable.head
+            Join(one._1, one._2)
+          }
+        }
+        Some(chosen, child)
       }
     }
   }
@@ -31,58 +63,21 @@ class Converter(_predtable: PredicateTable, _lextrigger: LexicalTrigger){
     val this_pred = mediate.root
     val child_trees : List[Option[DCSTree]] = mediate.children.map(mediate2dcs)
     // if a subtree is not feasible then whole the tree is unfeasible
-    if (child_trees.contains(None)) None else {
+    if (child_trees.contains(None)) None 
+    //leaf
+    else if (child_trees.isEmpty) Some(new DCSTree(this_pred, List[(Relation, DCSTree)]())) else {
       //inserting realtions
-      val children : List[Option[(Int, (Relation, DCSTree))]] = child_trees.flatMap{ child_op: Option[DCSTree] =>
-        child_op.map{ child: DCSTree =>
-          val child_pred = child.root
-          //try inserting join realtions
-          val joinable = this_pred.joinable(child_pred)
-          joinable match{
-            //insert trace predicate
-            case Nil => {
-              //just igonre for now
-              return None
-              /*
-              val trace_preds : List[Predicate] = predtable.realted_pred(this_pred, child_pred)
-                //to be written
-              */
-            }
-            case _ => {
-              //huristics
-              //assuming that root will take the domain part of values
-              val chosen : (Int, Join) = joinable.find{case (k, (i, j)) => i < j} match {
-                case Some(ret) => (ret._1, Join(ret._2._1, ret._2._2))
-                case None => {
-                  val (k, one) = joinable.head
-                  (k, Join(one._1, one._2))
-                }
-              }
-              Some((chosen._1, (chosen._2, child)))
-            }
-          }
-        }
-      }
-      if (children.contains(None)) None else {
-        val pretty_children = children.flatMap{case c => c}
-        val lovely_children = pretty_children.map(_._2)
-        this_pred match {
-          //for namepred, if it has feasible children then it is ok(already checked to be feasible)
-          case _:NamePredicate => Some(new DCSTree(this_pred, lovely_children))
-          case prepre:CustomPredicate => {
-            val chosen_indices = pretty_children.map(_._1)
-            chosen_indices match{
-              case Nil => Some(new DCSTree(prepre, lovely_children))
-              case _ => {
-                val head = chosen_indices.head
-                //huristics allow predicate to have only one table information
-                //i.e. does not allow amguity over tables
-                //if the correct relation is chosen its ok, though might be too strong....
-                //to be worked on
-                if (chosen_indices.forall{i:Int => i == head}) Some(new DCSTree(prepre.proj_away(head), lovely_children)) else None
-              }
-            }
-          }
+      val table_candidate = feasible_table(this_pred, child_trees)
+      table_candidate match{
+        //insert trace predicate
+        //for future work
+        case Nil =>println("!!!!!!!!!!!!!!!!!!!!!!!!NONE");println(this_pred); None
+        // have to choose feasible one with parent
+        // insert join relation
+        case _ => {
+          val pred_new = this_pred.proj_away(table_candidate)
+          val children : List[Option[(Relation, DCSTree)]] = child_trees.flatMap{ c => c}.map(insert_join(pred_new, _))
+          if (children.contains(None)) None else Some(new DCSTree(pred_new, children.flatMap{c => c}))
         }
       }
     }

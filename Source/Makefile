@@ -12,7 +12,7 @@ query:
 	cd query; make IN=../$(IN) OUT=../$(OUT)
 
 mydcs:
-	cd mydcs; make; make run IN=../$(DATA) OUT=../$(OUT)
+	cd mydcs; make run IN=../$(DATA) OUT=../$(OUT)
 
 clean:
 	cd mydcs; make clean

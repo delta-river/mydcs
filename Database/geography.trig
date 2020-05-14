@@ -5,7 +5,6 @@ lake:lake
 river:river	stream
 mountain:mountain
 place:place	point
-loc3:locate	in	where
 loc:locate	in	where
 capital:capital
 population:population
@@ -13,6 +12,6 @@ altitude:altitude	high
 traverse:traverse	cross	strech
 density:dense	density
 area:large	area	small
-border:border neighbor
+border:border	neighbor
 length:length	long
 
