@@ -6,10 +6,13 @@ DATA = Database/$(DATABASE)
 #OUT output base_path
 OUT = ./Output/output
 
-all: main
+all: prepare
 
-main:
-	cd Source; make IN=$(IN) DATA=$(DATA) OUT=$(OUT)
+prepare:
+	cd Source; make
+
+run:
+	cd Source; make run IN=../$(IN) DATA=../$(DATA) OUT=../$(OUT)
 
 #password for mysql
 database:

@@ -22,7 +22,7 @@ class Denotation(val a: Set[List[TupleValue]], val sigma: List[Store]){
   def join_proj(i: Int, j: Int, that: Denotation) : Denotation = {
     //doesnt check if i, j is valid index
     //どっちもemptyの場合は結局結果はemptyなので、これでOkだと思われ。
-    val a_new = this.a.flatMap{this_l: List[TupleValue] => that.a.flatMap{that_l: List[TupleValue] => if (this_l(i) == that_l(j)) Some(this_l ++ that_l) else None}}
+    val a_new = this.a.flatMap{this_l: List[TupleValue] => that.a.flatMap{that_l: List[TupleValue] => if (this_l(0).v(i) == that_l(0).v(j)) Some(this_l ++ that_l) else None}}
     val sigma_new = this.sigma ++ that.sigma
 
     (new Denotation(a_new, sigma_new)).remove
@@ -32,7 +32,7 @@ class Denotation(val a: Set[List[TupleValue]], val sigma: List[Store]){
     a.toSeq match{
       case Seq() => "No"
       case Seq(Nil) => "Yes"
-      case l => l.map{v: List[TupleValue] => v.map(_.output)}.mkString("{", ", ", "}")
+      case l => l.flatMap{v: List[TupleValue] => v.map(_.output)}.mkString("{", ", ", "}")
     }
   }
 
@@ -52,6 +52,7 @@ object Denotation{
         case (e, c)::rem_chil =>{
           e match {
             //for now only join relation
+            //others to be written
             case Join(i, j) => {
               val child_denote = calculate(c, world)
               val denote_new = acc.join_proj(i, j, child_denote)

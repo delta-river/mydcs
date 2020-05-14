@@ -16,7 +16,8 @@ object Main{
       val world : World = new World(db)
       val cv : Converter = Converter.from(input_base, db)
 
-      val dcs_trees : List[Option[DCSTree]] = InputTree.load(output_base).map(cv.convert(_))
+      val dcs_trees : List[Option[DCSTree]] = InputTree.load(output_base).map(_.flatMap(cv.convert(_)))
+      DCSTree.output(output_base, dcs_trees)
       val answers : List[Option[Denotation]] = dcs_trees.map(_.map(Denotation.calculate(_, world)))
       Answer.output(output_base, answers)
     }

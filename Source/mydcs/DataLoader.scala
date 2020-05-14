@@ -33,6 +33,10 @@ class DataBase(val database: Map[String, Data]){
     }
   }
 
+  //should be careful not to set same name for custompred
+  //probably this can be checked when the namepred table and custompred table are merged
+  //or how about just adding : to the end of the namepred name ?
+  //for : is not supposed to be used for custompred name
   def name_pred : Set[NamePredicate] = {
     def value2namePred(v: PrimitiveValue) : Option[NamePredicate] = {
       v match{
@@ -81,14 +85,21 @@ class DataLoader(base_path: String){
   private val source = Source.fromFile(path)
 
   val loaded_database = {
-    val lines = source.getLines
+    //lines does not contain "\n" at the last
+    //remove line that only contains "\n"
+    // # for comment out
+    val lines = source.getLines.filterNot{s: String => (s.length == 0 || s.startsWith("#"))}
+    //better to use Iterator than List(for a big file)
+    //future work
     parse(lines.toList, "", List[Tag](), List[Column](), Map[String, Data]())
   }
 
-  private val table_exp : Regex = """(.+):\n""".r
-  private val num_exp : Regex = """(-?\d+(?:\.\d*)?)""".r
+  //ここにおくとなぜかぬるぽになる
+  //private val table_exp : Regex = """(.+):\n""".r
+  //private val num_exp : Regex = """(-?\d+(?:\.\d*)?)""".r
 
   private def isNum(s: String) = {
+  val num_exp : Regex = """(-?\d+(?:\.\d*)?)""".r
     s match{
       case num_exp(d) => true
       case _ => false
@@ -98,6 +109,7 @@ class DataLoader(base_path: String){
   //type Data = (List[Column], Set[List[PrimitiveValue]])
   private def parse(lines: List[String], table: String, tags: List[Tag], columns: List[Column], acc_map: Map[String, Data]) : Map[String, Data] = {
     //caseが3重になってるのいやだな。。。
+   val table_exp : Regex = """(.+):""".r
    lines match{
      case y::yl =>{
        y match{
@@ -107,13 +119,8 @@ class DataLoader(base_path: String){
              case t::c::ys => {
                val table_new = p
                //assuming length of tags and corresponnding columns are the same
-               val tags_new = t.stripLineEnd.split("\t").toList
-               val columns_new = c.stripLineEnd.split("\t").toList
-               /*
-               //there might be a table with no specific values
-               val map_new = acc_map + (p->(columns_new, Set[List[PrimitiveValue]]()))
-               parse(ys, table_new, tags_new, columns_new, map_new)
-               */
+               val tags_new = t.split("\t").toList
+               val columns_new = c.split("\t").toList
               //empty table not allowed
                parse(ys, table_new, tags_new, columns_new, acc_map)
              }
@@ -123,7 +130,7 @@ class DataLoader(base_path: String){
          //table values
         case _ =>{
           //assuming length of tags, columns and corresponding data are the same
-          val v_new = y.stripLineEnd.split("\t").zip(tags).map {case (s, t) => if (isNum(s)) new NumericValue(s.toDouble, t) else SymbolicValue(s, t)}.toList
+          val v_new = y.split("\t").zip(tags).map {case (s, t) => if (isNum(s)) new NumericValue(s.toDouble, t) else SymbolicValue(s, t)}.toList
           val set_new = acc_map.getOrElse(table, (columns, Set[List[PrimitiveValue]]()))._2 + v_new
           val map_new = acc_map + (table->(columns, set_new))
           parse(yl, table, tags, columns, map_new)

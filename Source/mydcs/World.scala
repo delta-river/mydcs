@@ -9,7 +9,7 @@ class World(_database: DataBase) {
     p match{
       case NamePredicate(name, tag) => Set(List(TupleValue(List(SymbolicValue(name, tag)))))
       //ignore invalid tableinfo, which is not contained in the database 
-      case CustomPredicate(name, info, _) => info.flatMap(database.lookup(_)).foldLeft(Set[List[TupleValue]]()){(s1, s2) => s1 | s2.map{case v => List(v)}}
+      case CustomPredicate(_, info, _) => info.flatMap(database.lookup(_)).foldLeft(Set[List[TupleValue]]()){(s1, s2) => s1 | s2.map{case v => List(v)}}
     }
   }
 

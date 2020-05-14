@@ -10,14 +10,16 @@ trait Predicate{
   //use this information when inserting relation
   val abst : List[AbstractTup]
 
-  def joinable(that: Predicate) : List[(Int, Int)] = {
-    abst.flatMap{this_abst: AbstractTup => that.abst.flatMap{that_abst: AbstractTup => this_abst.matching(that_abst)}}
+  def joinable(that: Predicate) : List[(Int, (Int, Int))] = {
+    abst.zipWithIndex.flatMap{case (this_abst, i) => that.abst.flatMap{that_abst: AbstractTup => this_abst.matching(that_abst).map{p: (Int, Int) => (i, p)}}}
   }
 }
 
 case class NamePredicate(val name: String, val t: Tag) extends Predicate {
   val abst = List(AbstractTup(List(AbstractSymb(t))))
 }
+
+//assume ith component of info corresponds ith component of abst
 case class CustomPredicate(val name: String, val info: List[TableInfo], val abst: List[AbstractTup]) extends Predicate{
   def add_info(info_new: TableInfo) : CustomPredicate = new CustomPredicate(name, info :+ info_new, abst)
   def add_abst(abst_new: Option[AbstractTup]) : CustomPredicate = {
@@ -26,6 +28,18 @@ case class CustomPredicate(val name: String, val info: List[TableInfo], val abst
       case _ => this
     }
   }
+
+  def joinOrDelte(that: Predicate) : (CustomPredicate, List[(Int, Int)]) = {
+    val joinabler = this.joinable(that)
+    //indices of abst that matched
+    val surviver: List[Int] = joinabler.map(_._1)
+    val indice_p: List[(Int, Int)] = joinabler.map(_._2)
+    val info_new = surviver.map(info)
+    val abst_new = surviver.map(abst)
+    (new CustomPredicate(name, info_new, abst_new), indice_p)
+  }
+
+  def proj_away(i: Int) : CustomPredicate = new CustomPredicate(name, List(info(i)), List(abst(i)))
 }
 
 /* companion object cannot be set for trait
@@ -53,7 +67,8 @@ class PredicateTable(base_path: String, database: DataBase){
   private val source = Source.fromFile(path)
 
   private val custom_predMap : Map[String, Predicate] = {
-    val lines = source.getLines
+    // # for comment out
+    val lines = source.getLines.filterNot{s: String => (s.length == 0 || s.startsWith("#"))}
     load(lines.toList, Map[String, CustomPredicate]())
   }
 
@@ -61,6 +76,12 @@ class PredicateTable(base_path: String, database: DataBase){
     database.name_pred.foldLeft(Map[String, Predicate]()){case (l, r) => l + (r.name->r)}
   }
 
+  def namepred_trigger : Map[String, String] = {
+    name_predMap.keys.foldLeft(Map[String, String]()){case (l, r) => l + (r->r)}
+  }
+
+  //have to be careful about the name collision
+  //to be written
   private val predTable = custom_predMap ++ name_predMap
 
   def lookup(s: String) : Option[Predicate] = predTable.get(s)
@@ -68,20 +89,22 @@ class PredicateTable(base_path: String, database: DataBase){
   //enumerate predicates that can be used as trace predicate (only considering CustomPred)
   def related_pred(p1: Predicate, p2: Predicate) : List[Predicate] = {
     custom_predMap.values.toList.filter{ trace: Predicate =>
-      val p1_joinable = p1.joinable(trace)
-      val p2_joinable = trace.joinable(p2)
+      val p1_joinable = p1.joinable(trace).map(_._2)
+      val p2_joinable = trace.joinable(p2).map(_._2)
       //check if there is joinables pairs that does not share the same column of trace
       p1_joinable.exists{ case (i1, j1) => p2_joinable.exists{case (i2, j2) => j1 != i2}}
     }
   }
 
-  private val custom_exp = """([^:]+):([^:]+):(.+)\n""".r
+  //nullpo i dont know why
+  //private val custom_exp = """([^:]+):([^:]+):(.+)\n""".r
 
   private def load(lines: List[String], acc_map: Map[String, CustomPredicate]) : Map[String, CustomPredicate] = {
+    val custom_exp = """([^:]+):([^:]+):(.+)""".r
     lines match{
       case y::yl => {
         y match{
-          case custom_exp(name, table, columns, _) =>{
+          case custom_exp(name, table, columns) =>{
             val column_list = columns.split("\t").toList
             val info_new = new TableInfo(table, column_list)
             val abst_new : Option[AbstractTup]= database.get_abst(info_new)
@@ -89,8 +112,6 @@ class PredicateTable(base_path: String, database: DataBase){
             val map_new = acc_map + (name->pred_new)
             load(yl, map_new)
           }
-          //ignore line of just "\n"
-          case "\n" => load(yl, acc_map)
           case _ => {
             println("!!!!!!!!!!!!!!!!!predicate ignored: style miss-match")
             println(y)

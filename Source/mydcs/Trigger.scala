@@ -8,7 +8,7 @@ import scala.util.matching.Regex
 //pred_name1:word1\tword2\tword3...\n
 //...
 
-class LexicalTrigger(base_path: String){
+class LexicalTrigger(base_path: String, predtable: PredicateTable){
 
   // no error handling
   private val path = base_path + ".trig"
@@ -16,15 +16,20 @@ class LexicalTrigger(base_path: String){
 
   //map from words to predicate name
   private val lextrigger : Map[String, String] = {
-    val lines = source.getLines
-    load(lines.toList, Map[String, String]())
+    // # for comment out
+    val lines = source.getLines.filterNot{s: String => (s.length == 0 || s.startsWith("#"))}
+    val lexical = load(lines.toList, Map[String, String]())
+    //adds namepredicate trigger
+    lexical ++ predtable.namepred_trigger
   }
 
   def lookup(s: String) : Option[String] = lextrigger.get(s)
 
-  private val trigger_exp = """(.+):(.+)\n""".r
+  //nullpo i dont know why
+  //private val trigger_exp = """(.+):(.+)\n""".r
 
   private def load(lines: List[String], acc_map: Map[String, String]) : Map[String, String] = {
+    val trigger_exp = """(.+):(.+)""".r
     lines match{
       case y::yl => {
         y match{
@@ -34,8 +39,6 @@ class LexicalTrigger(base_path: String){
             val map_new = word_list.foldLeft(acc_map){ case (l, w) => l + (w->pred_name)}
             load(yl, map_new)
           }
-          //ignore line of just "\n"
-          case "\n" => load(yl, acc_map)
           case _ => {
             println("!!!!!!!!!!!!!!!!!trigger ignored: style miss-match")
             println(y)

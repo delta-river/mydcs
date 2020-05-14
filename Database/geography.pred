@@ -1,0 +1,30 @@
+city:city:city_name
+state:state:state_name
+country:state:country_name
+lake:lake:lake_name
+river:river:river_name
+mountain:mountain:mountain_name
+place:highlow:lowest_point
+place:highlow:highest_point
+loc:city:city_name	state_name
+loc:lake:lake_name	state_name
+loc:mountain:mountain_name	state_name
+loc:river:river_name	country_name
+loc:state:state_name	country_name
+loc:highlow:lowest_point	state_name
+loc:highlow:highest_point	state_name
+loc:state:capital	state_name
+capital:state:capital
+population:state:state_name	population
+population:city:city_name	population
+high point:highlow:highest_point
+low point:highlow:lowest_point
+density:state:density	state_name
+area:state:area	state_name
+border:border_info:state_name	border
+high elevation:highlow:highest_elevation	state_name
+low point:highlow:lowest_elevation	state_name
+altitude:mountain:mountain_altitude	mountain_name
+traverse:river:river_name	traverse
+length:river:river_name	length
+

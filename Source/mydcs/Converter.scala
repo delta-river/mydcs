@@ -33,10 +33,10 @@ class Converter(_predtable: PredicateTable, _lextrigger: LexicalTrigger){
     // if a subtree is not feasible then whole the tree is unfeasible
     if (child_trees.contains(None)) None else {
       //inserting realtions
-      val children : List[Option[(Relation, DCSTree)]] = child_trees.flatMap{ child_op: Option[DCSTree] =>
+      val children : List[Option[(Int, (Relation, DCSTree))]] = child_trees.flatMap{ child_op: Option[DCSTree] =>
         child_op.map{ child: DCSTree =>
           val child_pred = child.root
-          //inserting join realtions
+          //try inserting join realtions
           val joinable = this_pred.joinable(child_pred)
           joinable match{
             //insert trace predicate
@@ -51,21 +51,39 @@ class Converter(_predtable: PredicateTable, _lextrigger: LexicalTrigger){
             case _ => {
               //huristics
               //assuming that root will take the domain part of values
-              val chosen : Relation = joinable.find{case (i, j) => i < j} match {
-                case Some(ret) => Join(ret._1, ret._2)
+              val chosen : (Int, Join) = joinable.find{case (k, (i, j)) => i < j} match {
+                case Some(ret) => (ret._1, Join(ret._2._1, ret._2._2))
                 case None => {
-                  val one = joinable.head
-                  Join(one._1, one._2)
+                  val (k, one) = joinable.head
+                  (k, Join(one._1, one._2))
                 }
               }
-              Some((chosen, child))
+              Some((chosen._1, (chosen._2, child)))
             }
           }
         }
       }
       if (children.contains(None)) None else {
-        val lovely_children = children.flatMap{case c => c}
-        Some(new DCSTree(this_pred, lovely_children))
+        val pretty_children = children.flatMap{case c => c}
+        val lovely_children = pretty_children.map(_._2)
+        this_pred match {
+          //for namepred, if it has feasible children then it is ok(already checked to be feasible)
+          case _:NamePredicate => Some(new DCSTree(this_pred, lovely_children))
+          case prepre:CustomPredicate => {
+            val chosen_indices = pretty_children.map(_._1)
+            chosen_indices match{
+              case Nil => Some(new DCSTree(prepre, lovely_children))
+              case _ => {
+                val head = chosen_indices.head
+                //huristics allow predicate to have only one table information
+                //i.e. does not allow amguity over tables
+                //if the correct relation is chosen its ok, though might be too strong....
+                //to be worked on
+                if (chosen_indices.forall{i:Int => i == head}) Some(new DCSTree(prepre.proj_away(head), lovely_children)) else None
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -83,7 +101,7 @@ class Converter(_predtable: PredicateTable, _lextrigger: LexicalTrigger){
 object Converter{
   def from(path: String, database: DataBase) : Converter = {
     val predtable = new PredicateTable(path, database)
-    val lextrigger = new LexicalTrigger(path)
+    val lextrigger = new LexicalTrigger(path, predtable)
     new Converter(predtable, lextrigger)
   }
 }

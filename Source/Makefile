@@ -1,15 +1,20 @@
 #IN input tree base_path
 #DATA database base_path
 #OUT output base_path
-all: query mydcs
+all: prepare
+
+prepare:
+	cd mydcs; make
+
+run: query mydcs
 
 query:
-	cd query; make IN=$(IN) OUT=$(OUT)
+	cd query; make IN=../$(IN) OUT=../$(OUT)
 
 mydcs:
-	cd mydcs; make IN=$(DATA) OUT=$(OUT)
+	cd mydcs; make; make run IN=../$(DATA) OUT=../$(OUT)
 
 clean:
 	cd mydcs; make clean
 
-.PHONY: clean
+.PHONY: clean query mydcs
