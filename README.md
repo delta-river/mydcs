@@ -3,7 +3,7 @@ dcs implementation with only join relation
 
 [geography](https://github.com/jkkummerfeld/text2sql-data/tree/master/data) is used for data
 
-## requirements
+## requirements (linux)
 ### for runnning main part
 * python3
 * spaCy
