@@ -10,7 +10,8 @@ import scala.util.matching.Regex
 //table1:\n
 //tag1\ttag2...\n
 //column1\tcolumn2...\n
-//value1\tvalue2...\n
+//value0.1\tvalue0.2...\n
+//value1.1\tvalue1.2...\n
 //...
 
 class TableInfo(val table: String, val columns: List[Column])

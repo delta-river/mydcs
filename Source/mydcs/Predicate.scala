@@ -36,11 +36,14 @@ case class CustomPredicate(val name: String, val info: List[TableInfo], val abst
   def proj_away(i: List[Int]) = new CustomPredicate(name, i.map(info), i.map(abst))
 }
 
-/* companion object cannot be set for trait
-object Predicate{
-  //empty predicate
-  def empty : Predicate = new Predicate("")
-  def fromString(name: String): Predicate = new Predicate(name)
+/*
+//for future work
+case class NullPredicate extends Predicate{
+  val name : String = ""
+}
+
+abstract class FunctionPredicate extends Predicate {
+  val operate : List[Value] => Value
 }
 */
 

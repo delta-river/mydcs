@@ -21,13 +21,6 @@ case class SetValue(v:Set[Value]) extends Value {
   def push(s:Value) : SetValue = new SetValue(this.v + s)
 
   def output : String = v.toList.map(_.output).mkString("{", ", ", "}")
-  /*
-  def output : String = {
-    //with this code, ", " will always be at the begging of the word
-    val content : String = v.foldLeft(""){case (l, r) => l + ", " + r.output}
-    "{" + {if (content.length > 0) content.drop(2) else content} + "}"
-  }
-  */
 }
 
 //not to use this for simplification
@@ -54,7 +47,7 @@ object SetValue{
 trait AbstractValue
 case class AbstractSymb(t: Tag) extends AbstractValue
 case class AbstractNum(t: Tag) extends AbstractValue
-case class AbstractSet(v: AbstractValue) extends AbstractValue
+case class AbstractSet() extends AbstractValue
 case class AbstractTup(l: List[AbstractValue]) extends AbstractValue {
   //returns all matching indices, not to choose here
   def matching(that: AbstractTup) : List[(Int, Int)] = {

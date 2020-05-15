@@ -19,6 +19,6 @@ database:
 	@echo "mysql password:"; stty -echo; read PAS;stty echo;cd Database; make DATABASE=$(DATABASE) PAS="$$PAS"
 
 clean:
-	cd Database; make clean; cd Source; make clean
+	cd Database; make clean; cd ../Source; make clean
 
 .PHONY: clean database

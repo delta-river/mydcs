@@ -71,7 +71,7 @@ class Converter(_predtable: PredicateTable, _lextrigger: LexicalTrigger){
       table_candidate match{
         //insert trace predicate
         //for future work
-        case Nil =>println("!!!!!!!!!!!!!!!!!!!!!!!!NONE");println(this_pred); None
+        case Nil =>/*println("!!!!!!!!!!!!!!!!!!!!!!!!NONE");println(this_pred); */None
         // have to choose feasible one with parent
         // insert join relation
         case _ => {
