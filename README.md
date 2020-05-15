@@ -31,7 +31,7 @@ make database
 
 `OUT` is Output base path (files such as Output/output.answer will be created)
 
-Beisdes, for a database D, `Database/D.tag`, `Database/D.pred`, `Database/D.trig`, `Database/D.data` is required before run.
+Beisdes, for a database D, `Database/D.tag`, `Database/D.pred`, `Database/D.trig`, `Database/D.data` is required to be prepared before run.
 
 ```example
 make run IN=Input/query.txt DATABASE=geography OUT=Output/output
