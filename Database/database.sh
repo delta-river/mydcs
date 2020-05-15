@@ -48,15 +48,16 @@ function tag_insert(){
 	fi
 }
 
+#create a directory for the specific database
+mkdir -p ${DATABASE}
+cd ${DATABASE}
+
 #reset database
 if [ -e ${OUTPUT} ]; then
 	rm ${OUTPUT}
 fi
 touch ${OUTPUT}
 
-#create a directory for the specific database
-mkdir -p ${DATABASE}
-cd ${DATABASE}
 for s in ${SOURCE[@]}
 do
 	if [ ! -e $s ]; then
