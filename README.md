@@ -1,5 +1,6 @@
 # mydcs
 dcs implementation with only join relation
+
 [geography](https://github.com/jkkummerfeld/text2sql-data/tree/master/data) is used for data
 
 ## requirements
@@ -25,12 +26,14 @@ make database
 
 ## how to run
 `IN`is inpu query txt file
+
 `DATABASE` is database name
+
 `OUT` is Output base path (files such as Output/output.answer will be created)
 
 Beisdes, for a database D, `Database/D.tag`, `Database/D.pred`, `Database/D.trig`, `Database/D.data` is required before run.
 
-```
+```example
 make run IN=Input/query.txt DATABASE=geography OUT=Output/output
 ```
 
